@@ -1,0 +1,2 @@
+# hashisolver
+Hashi solver,
