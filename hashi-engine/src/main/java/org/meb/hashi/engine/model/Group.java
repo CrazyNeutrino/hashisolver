@@ -1,4 +1,4 @@
-package org.meb.hashi.model;
+package org.meb.hashi.engine.model;
 
 import java.util.Collection;
 import java.util.Collections;

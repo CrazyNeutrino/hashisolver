@@ -1,11 +1,11 @@
-package org.meb.hashi;
+package org.meb.hashi.engine;
 
-import org.meb.hashi.cfg.Globals;
-import org.meb.hashi.model.Group;
-import org.meb.hashi.model.Node;
-import org.meb.hashi.model.Side;
-import org.meb.hashi.model.State;
-import org.meb.hashi.schedule.Scheduler;
+import org.meb.hashi.engine.cfg.Globals;
+import org.meb.hashi.engine.model.Group;
+import org.meb.hashi.engine.model.Node;
+import org.meb.hashi.engine.model.Side;
+import org.meb.hashi.engine.model.State;
+import org.meb.hashi.engine.schedule.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,67 +78,107 @@ public class Solver {
 	}
 
 	public void solve() {
-		scheduler.reset();
 		solve(0);
 	}
 
-	public void solve(int limit) {
+	public void solve(int solvedLimit) {
 
-		int successCount = 0;
+		int solvedCount = 0;
 		boolean hadNext = false;
 
-		while (limit == 0 || (limit > 0 && successCount < limit)) {
+		while (scheduler.hasNext() && (solvedLimit == 0 || solvedLimit > solvedCount)) {
 
-			if (!scheduler.hasNext() && usePreventDeadGroups11) {
-				preventDeadGroups11();
-			}
-			if (!scheduler.hasNext()) {
-				preventDeadGroupsDegree2();
-			}
-			if (!scheduler.hasNext()) {
-				preventDeadGroupsDegree3();
-			}
-			if (!scheduler.hasNext() && usePreventDeadGroups121) {
-				preventDeadGroups121();
-			}
+			// if (!scheduler.hasNext() && usePreventDeadGroups11) {
+			// preventDeadGroups11();
+			// }
+			// if (!scheduler.hasNext()) {
+			// preventDeadGroupsDegree2();
+			// }
+			// if (!scheduler.hasNext()) {
+			// preventDeadGroupsDegree3();
+			// }
+			// if (!scheduler.hasNext() && usePreventDeadGroups121) {
+			// preventDeadGroups121();
+			// }
 
-			if (scheduler.hasNext()) {
-				Node node = scheduler.next();
-				if (solveNode(node)) {
-					successCount++;
-					state.setLastSolvedNode(node);
-				}
-
-				hadNext = true;
-			} else {
-				if (!hadNext) {
-					break;
-				}
-
-				hadNext = false;
+			Node node = scheduler.next();
+			if (solveNode(node)) {
+				solvedCount++;
+				state.setLastSolvedNode(node);
 			}
+			//
+			// hadNext = true;
+			// } else {
+			// if (!hadNext) {
+			// break;
+			// }
+			//
+			// hadNext = false;
 		}
 	}
+
+	// public void solve() {
+	// scheduler.reset();
+	// solve(0);
+	// }
+
+	// public void solve(int limit) {
+	//
+	// int successCount = 0;
+	// boolean hadNext = false;
+	//
+	// while (limit == 0 || (limit > 0 && successCount < limit)) {
+	//
+	// if (!scheduler.hasNext() && usePreventDeadGroups11) {
+	// preventDeadGroups11();
+	// }
+	// if (!scheduler.hasNext()) {
+	// preventDeadGroupsDegree2();
+	// }
+	// if (!scheduler.hasNext()) {
+	// preventDeadGroupsDegree3();
+	// }
+	// if (!scheduler.hasNext() && usePreventDeadGroups121) {
+	// preventDeadGroups121();
+	// }
+	//
+	// if (scheduler.hasNext()) {
+	// Node node = scheduler.next();
+	// if (solveNode(node)) {
+	// successCount++;
+	// state.setLastSolvedNode(node);
+	// }
+	//
+	// hadNext = true;
+	// } else {
+	// if (!hadNext) {
+	// break;
+	// }
+	//
+	// hadNext = false;
+	// }
+	// }
+	// }
 
 	private boolean solveNode(Node node) {
 		boolean success = false;
 
 		if (node.isNotComplete()) {
-			success |= remainingMatch(node);
+			success |= matchRemaining(node);
 		}
 
 		if (node.isNotComplete()) {
-			success |= completeMatch(node);
+			success |= matchCompletely(node);
 		}
 
 		if (node.isNotComplete() && usePartialMatch) {
-			success |= partialMatch(node);
+			success |= matchPartially(node);
 		}
 
 		return success;
 	}
 
-	private boolean remainingMatch(Node node) {
+	private boolean matchRemaining(Node node) {
 		assert node.isNotComplete();
 
 		boolean success = false;
@@ -178,19 +218,16 @@ public class Solver {
 		return success;
 	}
 
-	private boolean completeMatch(Node node) {
+	private boolean matchCompletely(Node node) {
 		assert node.isNotComplete();
 
 		boolean success = false;
 		int degree = node.degree();
-		int totalRemainingEdgeDegree = 0;
+		int sideDegreeTotal = node.sideDegreeTotal();
 
-		for (Side side : Side.values()) {
-			totalRemainingEdgeDegree += node.availableDegree(side);
-		}
-
-		if (degree == totalRemainingEdgeDegree) {
+		if (degree == sideDegreeTotal) {
 			log.info("[COMPLETE MATCH] -> node=({})", node);
+
 			for (Side side : Side.values()) {
 				Node neighbour = node.neighbour(side);
 				if (neighbour != null && neighbour.isNotComplete()) {
@@ -207,12 +244,12 @@ public class Solver {
 		return success;
 	}
 
-	private boolean partialMatch(Node node) {
+	private boolean matchPartially(Node node) {
 		assert node.isNotComplete();
 
 		boolean success = false;
 
-		int[] availableDegreeOthers = node.availableDegreeOthers();
+		int[] availableDegreeOthers = node.sideDegreeOthers();
 		int nodeDegree = node.degree();
 
 		for (Side side : Side.values()) {
@@ -233,6 +270,10 @@ public class Solver {
 	}
 
 	private void preventDeadGroups11() {
+		if (state.getGroups().size() == 2) {
+			return;
+		}
+
 		for (Group group : state.getGroups()) {
 			group.update();
 
@@ -250,7 +291,8 @@ public class Solver {
 						assert !group.equals(neighbourGroup) : group;
 
 						if (neighbourGroup.degree() == 1) {
-							log.info("[PREVENT DEAD GROUPS d1] -> node=({})", gateway);
+							log.info("[PREVENT DEAD GROUPS 1-1] -> node=({})", gateway);
+
 							state.clearNeighbours(gateway, side);
 							scheduler.schedule(gateway, null);
 							scheduler.schedule(neighbour, null);
@@ -325,15 +367,17 @@ public class Solver {
 					Node neighbour = gateway.neighbour(side);
 					if (neighbour != null) {
 						Group neighbourGroup = neighbour.group().update();
+						if (gateway.sideDegree(side) < 2) {
+							return;
+						}
 
 						assert !group.equals(neighbourGroup) : group;
 
 						if (neighbourGroup.degree() == 2 && neighbourGroup.getGatewaysCount() == 1) {
-							log.info("[PREVENT DEAD GROUPS d2] -> node=({}), neighbour=({})",
-									gateway, neighbour);
+							log.info("[PREVENT DEAD GROUPS d2] -> node=({}), neighbour=({})", gateway, neighbour);
 							// TODO
-							// scheduler.schedule(gateway, null);
-							// scheduler.schedule(neighbour, null);
+							scheduler.schedule(gateway, null);
+							scheduler.schedule(neighbour, null);
 							gateway.limitSideDegree(side, 1);
 							neighbour.limitSideDegree(side.opposite(), 1);
 							neighbour.update();

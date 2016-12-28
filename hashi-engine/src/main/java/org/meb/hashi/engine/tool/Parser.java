@@ -1,4 +1,4 @@
-package org.meb.hashi.tool;
+package org.meb.hashi.engine.tool;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

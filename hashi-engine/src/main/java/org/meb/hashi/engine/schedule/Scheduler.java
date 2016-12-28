@@ -1,6 +1,6 @@
-package org.meb.hashi.schedule;
+package org.meb.hashi.engine.schedule;
 
-import org.meb.hashi.model.Node;
+import org.meb.hashi.engine.model.Node;
 
 public interface Scheduler {
 

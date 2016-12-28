@@ -1,11 +1,11 @@
-package org.meb.hashi.model;
+package org.meb.hashi.engine.model;
 
-public class Coords {
+public class Position {
 
 	public final int x;
 	public final int y;
 
-	public Coords(int x, int y) {
+	public Position(int x, int y) {
 		this.x = x;
 		this.y = y;
 	}
@@ -27,7 +27,7 @@ public class Coords {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Coords other = (Coords) obj;
+		Position other = (Position) obj;
 		if (x != other.x)
 			return false;
 		if (y != other.y)
@@ -37,6 +37,6 @@ public class Coords {
 
 	@Override
 	public String toString() {
-		return new StringBuilder("x=").append(x).append(", y=").append(y).toString();
+		return new StringBuilder("y=").append(y).append(", x=").append(x).toString();
 	}
 }

@@ -1,10 +1,10 @@
-package org.meb.hashi.model;
+package org.meb.hashi.engine.model;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 public class Node {
 
-	public final Coords coords;
+	public final Position position;
 	private final int initialDegree;
 	private int degree;
 	private final Edge[] edges = new Edge[4];
@@ -14,7 +14,7 @@ public class Node {
 	private Group group;
 
 	public Node(int x, int y, int initialDegree) {
-		this.coords = new Coords(x, y);
+		this.position = new Position(x, y);
 		this.initialDegree = initialDegree;
 		this.degree = initialDegree;
 		new Group().addNode(this);
@@ -39,7 +39,7 @@ public class Node {
 		return neighbour == null ? 0 : neighbour.degree();
 	}
 
-	public int availableDegree(Side side) {
+	public int sideDegree(Side side) {
 		Edge edge = edges[side.ordinal()];
 		if (edge != null && edge.isComplete()) {
 			return 0;
@@ -55,11 +55,20 @@ public class Node {
 			return d;
 		}
 	}
+	
+	public int sideDegreeTotal() {
+		int sideDegreeTotal = 0;
+		for (Side side : Side.values()) {
+			sideDegreeTotal += sideDegree(side);
+		}
+		return sideDegreeTotal;
+	}
+	
 
-	public int[] availableDegreeOthers() {
+	public int[] sideDegreeOthers() {
 		int[] ds = new int[4];
 		for (Side side : Side.values()) {
-			int d = availableDegree(side);
+			int d = sideDegree(side);
 			for (int i = 0; i < 4; i++) {
 				if (i != side.ordinal()) {
 					ds[i] += d;
@@ -169,7 +178,7 @@ public class Node {
 
 	@Override
 	public String toString() {
-		return new StringBuilder("coords=(").append(coords.toString()).append("), initialDegree=")
+		return new StringBuilder("pos=(").append(position.toString()).append("), initialDegree=")
 				.append(initialDegree).append(", degree=").append(degree).append(", group=(")
 				.append(group).append(")").toString();
 	}
@@ -178,7 +187,7 @@ public class Node {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((coords == null) ? 0 : coords.hashCode());
+		result = prime * result + ((position == null) ? 0 : position.hashCode());
 		return result;
 	}
 
@@ -191,10 +200,10 @@ public class Node {
 		if (getClass() != obj.getClass())
 			return false;
 		Node other = (Node) obj;
-		if (coords == null) {
-			if (other.coords != null)
+		if (position == null) {
+			if (other.position != null)
 				return false;
-		} else if (!coords.equals(other.coords))
+		} else if (!position.equals(other.position))
 			return false;
 		return true;
 	}

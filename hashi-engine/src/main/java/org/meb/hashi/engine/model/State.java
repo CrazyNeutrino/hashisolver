@@ -1,9 +1,9 @@
-package org.meb.hashi.model;
+package org.meb.hashi.engine.model;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.meb.hashi.schedule.Scheduler;
+import org.meb.hashi.engine.schedule.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,7 @@ public class State {
 		boolean newEdge = false;
 		if (edge == null) {
 			newEdge = true;
-			int edgeDegree = node.availableDegree(side);
+			int edgeDegree = node.sideDegree(side);
 			edge = new Edge(edgeDegree, node, neighbour);
 			node.edge(side, edge);
 			neighbour.edge(side.opposite(), edge);
@@ -93,7 +93,7 @@ public class State {
 			int edgeDegree = Math.min(node.degree(), neighbour.degree());
 			edgeDegree = Math.min(edgeDegree, 2);
 			// edge.increaseDegree(edgeDegree);
-			edge.increaseDegree(node.availableDegree(side));
+			edge.increaseDegree(node.sideDegree(side));
 
 			log.info("increase edge=({})", edge);
 		}
@@ -125,48 +125,48 @@ public class State {
 
 	private void clearNeighbours(Edge edge, Scheduler scheduler) {
 		if (edge.isHorizontal()) {
-			int y = edge.node1().coords.y;
-			int xStart = Math.min(edge.node1().coords.x, edge.node2().coords.x) + 1;
-			int xEnd = Math.max(edge.node1().coords.x, edge.node2().coords.x) - 1;
+			int y = edge.node1().position.y;
+			int xStart = Math.min(edge.node1().position.x, edge.node2().position.x) + 1;
+			int xEnd = Math.max(edge.node1().position.x, edge.node2().position.x) - 1;
 
 			for (Node node : nodes) {
-				if (node.isComplete() || node.coords.x < xStart || node.coords.x > xEnd) {
+				if (node.isComplete() || node.position.x < xStart || node.position.x > xEnd) {
 					continue;
 				}
-				if (node.coords.y > y) {
+				if (node.position.y > y) {
 					Node neighbour = node.neighbour(Side.NORTH);
-					if (neighbour != null && neighbour.coords.y < y) {
+					if (neighbour != null && neighbour.position.y < y) {
 						clearNeighbours(node, Side.NORTH);
 						schedule(scheduler, new Node[] { node, neighbour }, edge.node1());
 					}
 				}
-				if (node.coords.y < y) {
+				if (node.position.y < y) {
 					Node neighbour = node.neighbour(Side.SOUTH);
-					if (neighbour != null && neighbour.coords.y > y) {
+					if (neighbour != null && neighbour.position.y > y) {
 						clearNeighbours(node, Side.SOUTH);
 						schedule(scheduler, new Node[] { node, neighbour }, edge.node1());
 					}
 				}
 			}
 		} else if (edge.isVertical()) {
-			int x = edge.node1().coords.x;
-			int yStart = Math.min(edge.node1().coords.y, edge.node2().coords.y) + 1;
-			int yEnd = Math.max(edge.node1().coords.y, edge.node2().coords.y) - 1;
+			int x = edge.node1().position.x;
+			int yStart = Math.min(edge.node1().position.y, edge.node2().position.y) + 1;
+			int yEnd = Math.max(edge.node1().position.y, edge.node2().position.y) - 1;
 
 			for (Node node : nodes) {
-				if (node.isComplete() || node.coords.y < yStart || node.coords.y > yEnd) {
+				if (node.isComplete() || node.position.y < yStart || node.position.y > yEnd) {
 					continue;
 				}
-				if (node.coords.x > x) {
+				if (node.position.x > x) {
 					Node neighbour = node.neighbour(Side.WEST);
-					if (neighbour != null && neighbour.coords.x < x) {
+					if (neighbour != null && neighbour.position.x < x) {
 						clearNeighbours(node, Side.WEST);
 						schedule(scheduler, new Node[] { node, neighbour }, edge.node1());
 					}
 				}
-				if (node.coords.x < x) {
+				if (node.position.x < x) {
 					Node neighbour = node.neighbour(Side.EAST);
-					if (neighbour != null && neighbour.coords.x > x) {
+					if (neighbour != null && neighbour.position.x > x) {
 						clearNeighbours(node, Side.EAST);
 						schedule(scheduler, new Node[] { node, neighbour }, edge.node1());
 					}

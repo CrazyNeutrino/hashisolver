@@ -1,4 +1,4 @@
-package org.meb.hashi.model;
+package org.meb.hashi.engine.model;
 
 public class Edge {
 
@@ -44,11 +44,11 @@ public class Edge {
 	}
 
 	public boolean isVertical() {
-		return node1.coords.x == node2.coords.x;
+		return node1.position.x == node2.position.x;
 	}
 
 	public boolean isHorizontal() {
-		return node1.coords.y == node2.coords.y;
+		return node1.position.y == node2.position.y;
 	}
 
 	public boolean isComplete() {
@@ -92,8 +92,8 @@ public class Edge {
 
 	@Override
 	public String toString() {
-		return new StringBuilder("coords1=(").append(node1.coords).append("), coords2=(")
-				.append(node2.coords).append("), degree=").append(degree).append(", complete=")
+		return new StringBuilder("coords1=(").append(node1.position).append("), coords2=(")
+				.append(node2.position).append("), degree=").append(degree).append(", complete=")
 				.append(complete).toString();
 	}
 }

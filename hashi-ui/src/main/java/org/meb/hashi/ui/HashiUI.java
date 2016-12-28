@@ -1,4 +1,4 @@
-package org.meb.hashiui.swing;
+package org.meb.hashi.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -13,8 +13,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -27,13 +27,14 @@ import javax.swing.JTextArea;
 import javax.swing.UIManager;
 
 import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
-import org.meb.hashi.Hashi;
-import org.meb.hashi.cfg.Globals;
-import org.meb.hashi.model.Edge;
-import org.meb.hashi.model.Node;
-import org.meb.hashi.model.Side;
-import org.meb.hashi.model.State;
+import org.meb.hashi.engine.Hashi;
+import org.meb.hashi.engine.cfg.Globals;
+import org.meb.hashi.engine.model.Edge;
+import org.meb.hashi.engine.model.Node;
+import org.meb.hashi.engine.model.Side;
+import org.meb.hashi.engine.model.State;
 
 public class HashiUI extends JFrame {
 
@@ -42,6 +43,7 @@ public class HashiUI extends JFrame {
 	static {
 		ConsoleAppender consoleAppender = new ConsoleAppender();
 		consoleAppender.setLayout(new PatternLayout("%-5p %m%n"));
+		consoleAppender.setThreshold(Level.INFO);
 		consoleAppender.activateOptions();
 		org.apache.log4j.Logger.getRootLogger().addAppender(consoleAppender);
 	}
@@ -49,35 +51,11 @@ public class HashiUI extends JFrame {
 	public static void main(String[] args) throws IOException {
 		int idx = 0;
 
-		String[] arr = new String[20];
-		arr[idx++] = "/easy/11x11_247678.txt";
-		arr[idx++] = "/easy/11x11_318964.txt";
-		arr[idx++] = "/medium/11x11_232304.txt";
-		arr[idx++] = "/medium/11x11_314196.txt";
-		arr[idx++] = "/hard/11x11_177393.txt";
-
-		arr[idx++] = "/hard/13x13_5452.txt";
-		arr[idx++] = "/hard/17x17_3039.txt";
-		arr[idx++] = "/hard/20x20_3694.txt";
-		arr[idx++] = "/hard/25x25_17.txt";
-		arr[idx++] = "/veryhard/13x13_126.txt";
-
-		arr[idx++] = "/veryhard/17x17_691.txt";
-		arr[idx++] = "/veryhard/17x17_9522.txt";
-		arr[idx++] = "/veryhard/25x25_27.txt";
-		arr[idx++] = "/superhard/11x11_45740.txt"; //***
-		arr[idx++] = "/superhard/11x11_137264.txt";
-
-		arr[idx++] = "/superhard/11x11_289825.txt";
-		arr[idx++] = "/superhard/17x17_1415.txt";
-		arr[idx++] = "/superhard/17x17_4540.txt";
-		arr[idx++] = "/superhard/17x17_5654.txt";
-		arr[idx++] = "/superhard/25x25_5.txt";
-
-		int chosen = 6;
-		InputStream stream = Hashi.class.getResourceAsStream(arr[chosen]);
-
-		Hashi hashi = new Hashi(stream, arr[chosen]);
+		String level = "medium";
+		String size = "11";
+		String number = "66952";
+		String path = "E:/Dropbox/hashi/menneske/" + level + "/" + size + "/" + number + ".txt";
+		Hashi hashi = new Hashi(new FileInputStream(path), null);
 		hashi.initialize();
 
 		try {
@@ -200,7 +178,7 @@ public class HashiUI extends JFrame {
 		solveButton.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-//				hashi.getSolver().setUsePreventDeadGroups121(false);
+				// hashi.getSolver().setUsePreventDeadGroups121(false);
 				hashi.getSolver().solve();
 				hashi.getSolver().getState().updateEdges();
 				HashiUI.this.repaint();

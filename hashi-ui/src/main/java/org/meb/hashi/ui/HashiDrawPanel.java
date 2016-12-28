@@ -1,4 +1,4 @@
-package org.meb.hashiui.swing;
+package org.meb.hashi.ui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -13,11 +13,11 @@ import java.util.HashMap;
 
 import javax.swing.JPanel;
 
-import org.meb.hashi.cfg.Globals;
-import org.meb.hashi.model.Edge;
-import org.meb.hashi.model.Group;
-import org.meb.hashi.model.Node;
-import org.meb.hashi.model.State;
+import org.meb.hashi.engine.cfg.Globals;
+import org.meb.hashi.engine.model.Edge;
+import org.meb.hashi.engine.model.Group;
+import org.meb.hashi.engine.model.Node;
+import org.meb.hashi.engine.model.State;
 
 public class HashiDrawPanel extends JPanel {
 
@@ -96,10 +96,10 @@ public class HashiDrawPanel extends JPanel {
 				g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0,
 						new float[] { 3 }, 0));
 			}
-			int startX = (int) ((edge.node1().coords.x + 0.5) * xScale + xMargin);
-			int startY = (int) ((edge.node1().coords.y + 0.5) * yScale + yMargin);
-			int endX = (int) ((edge.node2().coords.x + 0.5) * xScale + xMargin);
-			int endY = (int) ((edge.node2().coords.y + 0.5) * yScale + yMargin);
+			int startX = (int) ((edge.node1().position.x + 0.5) * xScale + xMargin);
+			int startY = (int) ((edge.node1().position.y + 0.5) * yScale + yMargin);
+			int endX = (int) ((edge.node2().position.x + 0.5) * xScale + xMargin);
+			int endY = (int) ((edge.node2().position.y + 0.5) * yScale + yMargin);
 
 			int halfRange = edge.degree() - 1;
 			for (int i = halfRange * -1; i <= halfRange; i += 2) {
@@ -147,7 +147,7 @@ public class HashiDrawPanel extends JPanel {
 			}
 
 			g2.setPaint(fillOvalPaint);
-			g2.fillOval(node.coords.x * xScale + xMargin, node.coords.y * yScale + yMargin, xScale,
+			g2.fillOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale,
 					yScale);
 
 			drawOvalPaint = groupColors.get(node.group());
@@ -156,15 +156,15 @@ public class HashiDrawPanel extends JPanel {
 			}
 
 			g2.setPaint(drawOvalPaint);
-			g2.drawOval(node.coords.x * xScale + xMargin, node.coords.y * yScale + yMargin, xScale,
+			g2.drawOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale,
 					yScale);
 			String string = String.valueOf(node.initialDegree());
 			int w = fm.stringWidth(string);
 			int h = fm.getAscent();
 			g2.setPaint(fillOvalPaint == Color.BLACK ? Color.WHITE : Color.BLACK);
 			g2.drawString(string,
-					(int) ((node.coords.x + 0.5) * xScale + xMargin - (w / 2.0f) + 1),
-					(int) ((node.coords.y + 0.5) * yScale + yMargin + (h / 2.0f)));
+					(int) ((node.position.x + 0.5) * xScale + xMargin - (w / 2.0f) + 1),
+					(int) ((node.position.y + 0.5) * yScale + yMargin + (h / 2.0f)));
 		}
 	}
 }

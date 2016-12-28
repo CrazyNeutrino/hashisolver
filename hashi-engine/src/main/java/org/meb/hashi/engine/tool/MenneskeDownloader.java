@@ -1,4 +1,4 @@
-package org.meb.hashi.tool;
+package org.meb.hashi.engine.tool;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -6,60 +6,80 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class MenneskeHashiLoader {
+public class MenneskeDownloader {
 
-	private final String URL_TEMPLATE = "http://www.menneske.no/hashi/&size;x&size;/eng/showpuzzle.html?number=&num;";
-	private final String PATH_TEMPLATE = "src/main/resources/&diff;/&size;x&size;_&num;.txt";
+	private final String URL_TEMPLATE = "http://www.menneske.no/hashi/eng/showpuzzle.html?number=&number;";
+	private final String URL_TEMPLATE_RANDOM = "http://www.menneske.no/hashi/&size;x&size;/eng/random.html";
 
-	private int size;
-	private int num;
+	private String homePath;
 
 	public static void main(String[] args) throws MalformedURLException, IOException {
-		new MenneskeHashiLoader(17, 9522).loadAndWrite();
+//		new MenneskeDownloader().downloadRandom(50);
+		new MenneskeDownloader().download(66952);
 	}
 
-	public MenneskeHashiLoader(int size, int num) {
-		this.size = size;
-		this.num = num;
+	public MenneskeDownloader() {
+		this(null);
 	}
 
-	public void loadAndWrite() throws MalformedURLException, IOException {
-		String url = URL_TEMPLATE.replace("&size;", Integer.toString(size)).replace("&num;",
-				Integer.toString(num));
-		if (size == 11) {
-			url = url.replace("/11x11", "");
-		}
-
-		Document doc = Jsoup.parse(new URL(url), 3000);
-		Elements hashiDiv = doc.select("div.hashi");
-
-		String diff;
-		Pattern p = Pattern.compile("(?i).+Difficulty: (Very Easy|Easy|Medium|Hard|Very Hard|Super Hard).+");
-		Matcher m = p.matcher(hashiDiv.text());
-		if (m.matches()) {
-			diff = m.group(1).toLowerCase().replace(" ", "");
+	public MenneskeDownloader(String homePath) {
+		if (homePath == null) {
+			this.homePath = System.getProperty("hashi.home");
+			if (StringUtils.isBlank(this.homePath)) {
+				throw new IllegalStateException("hashi.home not set");
+			}
+			this.homePath += "/menneske";
 		} else {
-			throw new IllegalStateException("Unable to determine difficulty");
+			this.homePath = homePath;
 		}
+	}
 
-		String path = PATH_TEMPLATE.replace("&size;", Integer.toString(size))
-				.replace("&num;", Integer.toString(num)).replace("&diff;", diff);
-
-		File file = new File(path);
-		if (file.exists()) {
-			throw new IllegalStateException("File exists: " + path);
+	public void downloadRandom(int quantity) throws MalformedURLException, IOException {
+		int[] sizes = {7, 9, 11, 13, 17, 20, 25};
+		Random random = new Random();
+		for (int i = 0; i < quantity; i++) {
+			int size = sizes[random.nextInt(sizes.length)];
+			String url = URL_TEMPLATE_RANDOM.replace("&size;", Integer.toString(size));
+			url = url.replace("/11x11", "");
+			Document document = Jsoup.parse(new URL(url), 3000);
+			parseAndSave(document);
 		}
+	}
 
-		BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-		writer.write(Integer.toString(size - 1));
+	public void downloadRandom(int quantity, int size) throws MalformedURLException, IOException {
+		for (int i = 0; i < quantity; i++) {
+			String url = URL_TEMPLATE_RANDOM.replace("&size;", Integer.toString(size));
+			url = url.replace("/11x11", "");
+			Document document = Jsoup.parse(new URL(url), 3000);
+			parseAndSave(document);
+		}
+	}
+
+	public void download(int number) throws MalformedURLException, IOException {
+		String url = URL_TEMPLATE.replace("&number;", Integer.toString(number));
+		Document document = Jsoup.parse(new URL(url), 3000);
+		parseAndSave(document);
+	}
+
+	public void parseAndSave(Document document) throws MalformedURLException, IOException {
+		Elements hashiDiv = document.select("div.hashi");
+
+		int number = parseNumber(hashiDiv);
+		int size = parseSize(hashiDiv);
+		String difficulty = parseDifficulty(hashiDiv);
+
+		BufferedWriter writer = createWriter(number, size, difficulty);
+		writer.write(Integer.toString(size));
 		writer.newLine();
 
 		Elements rows = hashiDiv.select("table tr");
@@ -84,5 +104,54 @@ public class MenneskeHashiLoader {
 
 		writer.flush();
 		writer.close();
+	}
+
+	private BufferedWriter createWriter(int number, int size, String difficulty) throws IOException {
+		File hashiDir = new File(homePath + "/" + difficulty + "/" + Integer.toString(size));
+		if (hashiDir.exists()) {
+			if (!hashiDir.isDirectory()) {
+				throw new IllegalStateException("Not a directory");
+			}
+		} else {
+			boolean success = hashiDir.mkdirs();
+			if (!success) {
+				throw new IllegalStateException("Unable to create target directory:" + hashiDir.getAbsolutePath());
+			}
+		}
+		File hashiFile = new File(hashiDir, Integer.toString(number) + ".txt");
+		
+		return new BufferedWriter(new FileWriter(hashiFile));
+	}
+
+	private int parseNumber(Elements hashiDiv) {
+		String number;
+		
+		Pattern p = Pattern.compile("(?i).+Showing puzzle number: ([0-9]+).+");
+		Matcher m = p.matcher(hashiDiv.text());
+		if (m.matches()) {
+			number = m.group(1).toLowerCase().replace(" ", "");
+		} else {
+			throw new IllegalStateException("Unable to determine number");
+		}
+		
+		return Integer.parseInt(number);
+	}
+
+	private int parseSize(Elements hashiDiv) {
+		return hashiDiv.select("table tr").size();
+	}
+
+	private String parseDifficulty(Elements hashiDiv) {
+		String difficulty;
+		
+		Pattern p = Pattern.compile("(?i).+Difficulty: (Very Easy|Easy|Medium|Hard|Very Hard|Super Hard).+");
+		Matcher m = p.matcher(hashiDiv.text());
+		if (m.matches()) {
+			difficulty = m.group(1).toLowerCase().replace(" ", "");
+		} else {
+			throw new IllegalStateException("Unable to determine difficulty");
+		}
+		
+		return difficulty;
 	}
 }

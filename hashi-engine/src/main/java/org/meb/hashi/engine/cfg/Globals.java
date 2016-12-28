@@ -1,12 +1,12 @@
-package org.meb.hashi.cfg;
+package org.meb.hashi.engine.cfg;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.meb.hashi.model.Coords;
-import org.meb.hashi.model.Node;
-import org.meb.hashi.model.Side;
+import org.meb.hashi.engine.model.Node;
+import org.meb.hashi.engine.model.Position;
+import org.meb.hashi.engine.model.Side;
 
 public class Globals {
 
@@ -16,17 +16,17 @@ public class Globals {
 	private int xMax;
 	private int yMax;
 
-	private Map<Coords, Node> nodeAtMap;
+	private Map<Position, Node> nodeAtMap;
 
 	public Globals(int xMax, int yMax, Node[] nodes) {
 		assert xMax > 0;
 		assert yMax > 0;
 
 		if (nodeAtMap == null) {
-			HashMap<Coords, Node> tmpNodeAtMap = new HashMap<Coords, Node>();
+			HashMap<Position, Node> tmpNodeAtMap = new HashMap<Position, Node>();
 			for (Node node : nodes) {
-				assert (!tmpNodeAtMap.containsKey(node.coords));
-				tmpNodeAtMap.put(node.coords, node);
+				assert (!tmpNodeAtMap.containsKey(node.position));
+				tmpNodeAtMap.put(node.position, node);
 			}
 			nodeAtMap = Collections.unmodifiableMap(tmpNodeAtMap);
 		}
@@ -50,16 +50,16 @@ public class Globals {
 		return yMax;
 	}
 
-	public Map<Coords, Node> nodeAtMap() {
+	public Map<Position, Node> nodeAtMap() {
 		return nodeAtMap;
 	}
 
-	public Node nodeAt(Coords coords) {
-		return nodeAtMap.get(coords);
+	public Node nodeAt(Position position) {
+		return nodeAtMap.get(position);
 	}
 
 	public Node nodeAt(int x, int y) {
-		return nodeAt(new Coords(x, y));
+		return nodeAt(new Position(x, y));
 	}
 
 	public void fillNeighbourNodes(Node[] vs) {
@@ -89,8 +89,8 @@ public class Globals {
 
 	public Node findNodeNorth(Node node) {
 		Node vNorth;
-		for (int y = node.coords.y - 1; y >= Y_MIN; y--) {
-			vNorth = nodeAt(node.coords.x, y);
+		for (int y = node.position.y - 1; y >= Y_MIN; y--) {
+			vNorth = nodeAt(node.position.x, y);
 			if (vNorth != null) {
 				return vNorth;
 			}
@@ -100,8 +100,8 @@ public class Globals {
 
 	public Node findNodeSouth(Node node) {
 		Node vSouth;
-		for (int y = node.coords.y + 1; y <= yMax; y++) {
-			vSouth = nodeAt(node.coords.x, y);
+		for (int y = node.position.y + 1; y <= yMax; y++) {
+			vSouth = nodeAt(node.position.x, y);
 			if (vSouth != null) {
 				return vSouth;
 			}
@@ -111,8 +111,8 @@ public class Globals {
 
 	public Node findNodeEast(Node node) {
 		Node vEast;
-		for (int x = node.coords.x + 1; x <= xMax; x++) {
-			vEast = nodeAt(x, node.coords.y);
+		for (int x = node.position.x + 1; x <= xMax; x++) {
+			vEast = nodeAt(x, node.position.y);
 			if (vEast != null) {
 				return vEast;
 			}
@@ -122,8 +122,8 @@ public class Globals {
 
 	public Node findNodeWest(Node node) {
 		Node vWest;
-		for (int x = node.coords.x - 1; x >= X_MIN; x--) {
-			vWest = nodeAt(x, node.coords.y);
+		for (int x = node.position.x - 1; x >= X_MIN; x--) {
+			vWest = nodeAt(x, node.position.y);
 			if (vWest != null) {
 				return vWest;
 			}
