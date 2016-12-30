@@ -14,6 +14,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import javax.swing.BorderFactory;
@@ -29,6 +30,7 @@ import javax.swing.UIManager;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
+import org.jsoup.helper.StringUtil;
 import org.meb.hashi.engine.Hashi;
 import org.meb.hashi.engine.cfg.Globals;
 import org.meb.hashi.engine.model.Edge;
@@ -39,6 +41,7 @@ import org.meb.hashi.engine.model.State;
 public class HashiUI extends JFrame {
 
 	private static final long serialVersionUID = 1L;
+	private static String homePath;
 
 	static {
 		ConsoleAppender consoleAppender = new ConsoleAppender();
@@ -46,24 +49,21 @@ public class HashiUI extends JFrame {
 		consoleAppender.setThreshold(Level.INFO);
 		consoleAppender.activateOptions();
 		org.apache.log4j.Logger.getRootLogger().addAppender(consoleAppender);
+
+		homePath = System.getProperty("hashi.home");
+		if (StringUtil.isBlank(homePath)) {
+			throw new IllegalStateException("hashi.home is not set");
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
-		int idx = 0;
-
-		String level = "medium";
-		String size = "11";
-		String number = "66952";
-		String path = "E:/Dropbox/hashi/menneske/" + level + "/" + size + "/" + number + ".txt";
-		Hashi hashi = new Hashi(new FileInputStream(path), null);
-		hashi.initialize();
-
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
+		Hashi hashi = loadHashi(homePath);
 		HashiUI hashiUI = new HashiUI();
 		hashiUI.setTitle(hashi.getName());
 		hashiUI.setLocation(300, 100);
@@ -78,6 +78,16 @@ public class HashiUI extends JFrame {
 		});
 		hashiUI.pack();
 		hashiUI.setVisible(true);
+	}
+
+	private static Hashi loadHashi(String homePath) throws FileNotFoundException, IOException {
+		String level = "hard";
+		String size = "25";
+		String number = "63";
+		String path = homePath + "/menneske/" + level + "/" + size + "/" + number + ".txt";
+		Hashi hashi = new Hashi(new FileInputStream(path), null);
+		hashi.initialize();
+		return hashi;
 	}
 
 	private void addComponentsToPane(final Hashi hashi) {
@@ -209,5 +219,25 @@ public class HashiUI extends JFrame {
 			}
 		});
 		controlPanel.add(next5Button, gbc);
+
+		// gbc.gridy = 3;
+		// JButton resetButton = new JButton("Reset");
+		// resetButton.addActionListener(new ActionListener() {
+		//
+		// public void actionPerformed(ActionEvent e) {
+		// Hashi hashi = null;
+		// try {
+		// hashi = loadHashi(homePath);
+		// } catch (FileNotFoundException e1) {
+		// throw new IllegalStateException(e1);
+		// } catch (IOException e1) {
+		// throw new IllegalStateException(e1);
+		// }
+		// HashiUI.this.getContentPane().removeAll();
+		// HashiUI.this.addComponentsToPane(hashi);
+		// HashiUI.this.repaint();
+		// }
+		// });
+		// controlPanel.add(resetButton, gbc);
 	}
 }

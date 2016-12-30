@@ -82,39 +82,45 @@ public class Solver {
 	}
 
 	public void solve(int solvedLimit) {
+		boolean success;
+		do {
+			success = false;
+			success |= solveNodes(solvedLimit);
+			success |= solveGroups();
+		} while (success);
+	}
 
-		int solvedCount = 0;
-		boolean hadNext = false;
+	private boolean solveNodes(int stepsLimit) {
 
-		while (scheduler.hasNext() && (solvedLimit == 0 || solvedLimit > solvedCount)) {
+		boolean success = false;
+		int stepsCount = 0;
 
-			// if (!scheduler.hasNext() && usePreventDeadGroups11) {
-			// preventDeadGroups11();
-			// }
-			// if (!scheduler.hasNext()) {
-			// preventDeadGroupsDegree2();
-			// }
-			// if (!scheduler.hasNext()) {
-			// preventDeadGroupsDegree3();
-			// }
-			// if (!scheduler.hasNext() && usePreventDeadGroups121) {
-			// preventDeadGroups121();
-			// }
-
+		while (scheduler.hasNext() && (stepsLimit == 0 || stepsLimit > stepsCount)) {
 			Node node = scheduler.next();
 			if (solveNode(node)) {
-				solvedCount++;
+				success = true;
+				stepsCount++;
 				state.setLastSolvedNode(node);
 			}
-			//
-			// hadNext = true;
-			// } else {
-			// if (!hadNext) {
-			// break;
-			// }
-			//
-			// hadNext = false;
 		}
+
+		return success;
+	}
+
+	private boolean solveGroups() {
+		if (!scheduler.hasNext() && usePreventDeadGroups11) {
+			preventDeadGroups11();
+		}
+		if (!scheduler.hasNext()) {
+			preventDeadGroupsDegree2();
+		}
+		// if (!scheduler.hasNext()) {
+		// preventDeadGroupsDegree3();
+		// }
+		// if (!scheduler.hasNext() && usePreventDeadGroups121) {
+		// preventDeadGroups121();
+		// }
+		return false;
 	}
 
 	// public void solve() {
@@ -163,9 +169,9 @@ public class Solver {
 	private boolean solveNode(Node node) {
 		boolean success = false;
 
-		if (node.isNotComplete()) {
-			success |= matchRemaining(node);
-		}
+		// if (node.isNotComplete()) {
+		// success |= matchRemaining(node);
+		// }
 
 		if (node.isNotComplete()) {
 			success |= matchCompletely(node);
@@ -373,8 +379,10 @@ public class Solver {
 
 						assert !group.equals(neighbourGroup) : group;
 
-						if (neighbourGroup.degree() == 2 && neighbourGroup.getGatewaysCount() == 1) {
-							log.info("[PREVENT DEAD GROUPS d2] -> node=({}), neighbour=({})", gateway, neighbour);
+						if (neighbourGroup.degree() == 2
+								&& neighbourGroup.getGatewaysCount() == 1) {
+							log.info("[PREVENT DEAD GROUPS d2] -> node=({}), neighbour=({})",
+									gateway, neighbour);
 							// TODO
 							scheduler.schedule(gateway, null);
 							scheduler.schedule(neighbour, null);
