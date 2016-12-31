@@ -20,7 +20,7 @@ public class Hashi {
 	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory.getLogger(Hashi.class);
 
-	private Solver solver;
+	private HashiSolver solver;
 	private String name;
 	private InputStream stream;
 
@@ -29,7 +29,7 @@ public class Hashi {
 		this.stream = stream;
 	}
 
-	public void initialize() throws IOException {
+	public Hashi initialize() throws IOException {
 		HashiReader hashiReader = new HashiReader();
 		hashiReader.read(stream);
 		List<Node> nodeList = hashiReader.getNodeList();
@@ -41,15 +41,17 @@ public class Hashi {
 		Globals globals = new Globals(size - 1, size - 1, nodes);
 		globals.fillNeighbourNodes(nodes);
 
-		solver = new Solver(nodes, globals, new BasicScheduler(nodes));
+		solver = new HashiSolver(nodes, globals, new BasicScheduler(nodes));
 		solver.getState().updateEdges();
+		
+		return this;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public Solver getSolver() {
+	public HashiSolver getSolver() {
 		return solver;
 	}
 }

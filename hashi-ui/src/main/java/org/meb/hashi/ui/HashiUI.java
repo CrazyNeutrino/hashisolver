@@ -16,6 +16,7 @@ import java.awt.event.WindowEvent;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -32,13 +33,19 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.jsoup.helper.StringUtil;
 import org.meb.hashi.engine.Hashi;
+import org.meb.hashi.engine.StepsCounter;
 import org.meb.hashi.engine.cfg.Globals;
 import org.meb.hashi.engine.model.Edge;
 import org.meb.hashi.engine.model.Node;
 import org.meb.hashi.engine.model.Side;
 import org.meb.hashi.engine.model.State;
+import org.meb.hashi.engine.tool.MenneskeDownloader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HashiUI extends JFrame {
+
+	private static final Logger log = LoggerFactory.getLogger(HashiUI.class);
 
 	private static final long serialVersionUID = 1L;
 	private static String homePath;
@@ -81,13 +88,36 @@ public class HashiUI extends JFrame {
 	}
 
 	private static Hashi loadHashi(String homePath) throws FileNotFoundException, IOException {
-		String level = "hard";
-		String size = "25";
-		String number = "63";
-		String path = homePath + "/menneske/" + level + "/" + size + "/" + number + ".txt";
-		Hashi hashi = new Hashi(new FileInputStream(path), null);
-		hashi.initialize();
-		return hashi;
+		Object[][] data = new Object[10][];
+		data[0] = new Object[] { "superhard", 11, 283306 };
+		data[1] = new Object[] { "superhard", 11, 133471 }; // ++
+		data[2] = new Object[] { "hard", 25, 63 };
+		data[3] = new Object[] { "hard", 13, 30868 };
+		data[4] = new Object[] { "superhard", 13, 4776 }; // +++
+		data[5] = new Object[] { "superhard", 13, 32435 }; // ++
+		data[6] = new Object[] { "superhard", 13, 19472 }; // ++
+
+		int idx = 6;
+		String difficulty = (String) data[idx][0];
+		int size = (Integer) data[idx][1];
+		int number = (Integer) data[idx][2];
+
+		return loadOrDownloadHashi(homePath, difficulty, size, number);
+	}
+
+	private static Hashi loadOrDownloadHashi(String homePath, String difficulty, int size, int number)
+			throws MalformedURLException, IOException {
+
+		String path = homePath + "/menneske/" + difficulty + "/" + size + "/" + number + ".txt";
+		Hashi hashi = null;
+		try {
+			hashi = new Hashi(new FileInputStream(path), null);
+		} catch (FileNotFoundException e) {
+			log.info("Hashi file not found: {}, trying to download", path);
+			new MenneskeDownloader(homePath).download(size, number);
+			hashi = new Hashi(new FileInputStream(path), null);
+		}
+		return hashi.initialize();
 	}
 
 	private void addComponentsToPane(final Hashi hashi) {
@@ -201,7 +231,7 @@ public class HashiUI extends JFrame {
 		nextButton.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-				hashi.getSolver().solve(1);
+				hashi.getSolver().solve(new StepsCounter(1));
 				hashi.getSolver().getState().updateEdges();
 				HashiUI.this.repaint();
 			}
@@ -213,7 +243,7 @@ public class HashiUI extends JFrame {
 		next5Button.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
-				hashi.getSolver().solve(5);
+				hashi.getSolver().solve(new StepsCounter(5));
 				hashi.getSolver().getState().updateEdges();
 				HashiUI.this.repaint();
 			}

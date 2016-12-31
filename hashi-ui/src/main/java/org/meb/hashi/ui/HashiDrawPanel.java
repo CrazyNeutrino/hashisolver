@@ -22,8 +22,8 @@ import org.meb.hashi.engine.model.State;
 public class HashiDrawPanel extends JPanel {
 
 	private static final long serialVersionUID = -3543590513553062113L;
-	private static final String[] colorCodes = { "FF0000", "009900", "FF00FF", "8E8ECC", "FF7700",
-			"FF66CC", "005CE6", "00FF00", "C7C71F", "5C8533" };
+	private static final String[] colorCodes = { "FF0000", "009900", "FF00FF", "8E8ECC", "FF7700", "FF66CC", "005CE6",
+			"00FF00", "C7C71F", "5C8533" };
 
 	private State state;
 	private Globals globals;
@@ -45,8 +45,8 @@ public class HashiDrawPanel extends JPanel {
 	}
 
 	public Node getNodeAt(int x, int y) {
-		int nodeX = (int)(x - xMargin) / xScale;
-		int nodeY = (int)(y - yMargin) / yScale;
+		int nodeX = (int) (x - xMargin) / xScale;
+		int nodeY = (int) (y - yMargin) / yScale;
 		return globals.nodeAt(nodeX, nodeY);
 	}
 
@@ -66,26 +66,39 @@ public class HashiDrawPanel extends JPanel {
 		FontMetrics legendFm = g2.getFontMetrics(legendFont);
 		g2.setPaint(Color.GRAY);
 
+		// grid legend x
 		for (int i = 0; i <= globals.xMax(); i++) {
 			String string = Integer.toString(i);
 			int w = legendFm.stringWidth(string);
 			int h = legendFm.getAscent();
-			g2.drawString(string, (int) ((i + 0.5) * xScale + xMargin - w / 2.0f),
-					(int) (yMargin / 2.0f + h / 2.0f));
+			g2.drawString(string, (int) ((i + 0.5) * xScale + xMargin - w / 2.0f), (int) (yMargin / 2.0f + h / 2.0f));
 			g2.drawString(string, (int) ((i + 0.5) * xScale + xMargin - w / 2.0f),
 					(int) (dim.height - yMargin / 2.0f + h / 2.0f));
 		}
 
+		// grid legend y
 		for (int i = 0; i <= globals.yMax(); i++) {
 			String string = Integer.toString(i);
 			int w = legendFm.stringWidth(string);
 			int h = legendFm.getAscent();
-			g2.drawString(string, (int) (xMargin / 2.0f - w / 2.0f), (int) ((i + 0.5) * yScale
-					+ yMargin + h / 2.0f));
-			g2.drawString(string, (int) (dim.width - xMargin / 2.0f - w / 2.0f), (int) ((i + 0.5)
-					* xScale + xMargin + h / 2.0f));
+			g2.drawString(string, (int) (xMargin / 2.0f - w / 2.0f), (int) ((i + 0.5) * yScale + yMargin + h / 2.0f));
+			g2.drawString(string, (int) (dim.width - xMargin / 2.0f - w / 2.0f),
+					(int) ((i + 0.5) * xScale + xMargin + h / 2.0f));
 		}
 
+		// grid lines
+		g2.setPaint(Color.LIGHT_GRAY);
+		g2.setStroke(new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[] { 3 }, 0));
+		for (int i = 0; i <= globals.xMax(); i++) {
+			int x = (int) ((i + 0.5) * xScale) + xMargin;
+			g2.drawLine(x, yMargin, x, dim.height - yMargin);
+		}
+		for (int i = 0; i <= globals.yMax(); i++) {
+			int y = (int) ((i + 0.5) * yScale) + yMargin;
+			g2.drawLine(xMargin, y, dim.width - xMargin, y);
+		}
+
+		// edges
 		g2.setPaint(Color.BLACK);
 		for (Edge edge : state.getEdges()) {
 			g2.setPaint(Color.BLACK);
@@ -93,8 +106,7 @@ public class HashiDrawPanel extends JPanel {
 				g2.setStroke(new BasicStroke(2));
 			} else {
 				// g2.setPaint(Color.RED);
-				g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0,
-						new float[] { 3 }, 0));
+				g2.setStroke(new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[] { 3 }, 0));
 			}
 			int startX = (int) ((edge.node1().position.x + 0.5) * xScale + xMargin);
 			int startY = (int) ((edge.node1().position.y + 0.5) * yScale + yMargin);
@@ -121,6 +133,7 @@ public class HashiDrawPanel extends JPanel {
 			}
 		}
 
+		// nodes
 		g2.setPaint(Color.BLACK);
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g2.setStroke(new BasicStroke(2));
@@ -139,16 +152,21 @@ public class HashiDrawPanel extends JPanel {
 					fillOvalColor = Color.BLACK;
 				}
 				fillOvalPaint = fillOvalColor;
-//				fillOvalPaint = new RadialGradientPaint((node.coords.x + 0.5f) * xScale + xMargin,
-//						(node.coords.y + 0.5f) * yScale + yMargin, xScale / 2.0f, new float[] {
-//								0.4f, 1.0f }, new Color[] { Color.WHITE, fillOvalColor });
+				// fillOvalPaint = new RadialGradientPaint((node.coords.x +
+				// 0.5f) * xScale + xMargin,
+				// (node.coords.y + 0.5f) * yScale + yMargin, xScale / 2.0f, new
+				// float[] {
+				// 0.4f, 1.0f }, new Color[] { Color.WHITE, fillOvalColor });
 			} else {
-				fillOvalPaint = Color.WHITE;
+				if (node.isComplete()) {
+					fillOvalPaint = new Color(240, 240, 240);
+				} else {
+					fillOvalPaint = Color.WHITE;
+				}
 			}
 
 			g2.setPaint(fillOvalPaint);
-			g2.fillOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale,
-					yScale);
+			g2.fillOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale, yScale);
 
 			drawOvalPaint = groupColors.get(node.group());
 			if (drawOvalPaint == null) {
@@ -156,14 +174,13 @@ public class HashiDrawPanel extends JPanel {
 			}
 
 			g2.setPaint(drawOvalPaint);
-			g2.drawOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale,
-					yScale);
+
+			g2.drawOval(node.position.x * xScale + xMargin, node.position.y * yScale + yMargin, xScale, yScale);
 			String string = String.valueOf(node.initialDegree());
 			int w = fm.stringWidth(string);
 			int h = fm.getAscent();
 			g2.setPaint(fillOvalPaint == Color.BLACK ? Color.WHITE : Color.BLACK);
-			g2.drawString(string,
-					(int) ((node.position.x + 0.5) * xScale + xMargin - (w / 2.0f) + 1),
+			g2.drawString(string, (int) ((node.position.x + 0.5) * xScale + xMargin - (w / 2.0f) + 1),
 					(int) ((node.position.y + 0.5) * yScale + yMargin + (h / 2.0f)));
 		}
 	}

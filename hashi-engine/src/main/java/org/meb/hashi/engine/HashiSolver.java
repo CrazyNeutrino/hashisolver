@@ -9,11 +9,10 @@ import org.meb.hashi.engine.schedule.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Solver {
+public class HashiSolver {
 
-	private static final Logger log = LoggerFactory.getLogger(Solver.class);
+	private static final Logger log = LoggerFactory.getLogger(HashiSolver.class);
 
-	private boolean useRemainingMatch = true;
 	private boolean useCompleteMatch = true;
 	private boolean usePartialMatch = true;
 	private boolean usePreventDeadGroups11 = true;
@@ -23,7 +22,7 @@ public class Solver {
 	private Globals globals;
 	private Scheduler scheduler;
 
-	public Solver(Node[] nodes, Globals globals, Scheduler scheduler) {
+	public HashiSolver(Node[] nodes, Globals globals, Scheduler scheduler) {
 		this.state = new State(nodes);
 		this.globals = globals;
 		this.scheduler = scheduler;
@@ -35,14 +34,6 @@ public class Solver {
 
 	public Globals getGlobals() {
 		return globals;
-	}
-
-	public boolean isUseRemainingMatch() {
-		return useRemainingMatch;
-	}
-
-	public void setUseRemainingMatch(boolean useRemainingMatch) {
-		this.useRemainingMatch = useRemainingMatch;
 	}
 
 	public boolean isUseCompleteMatch() {
@@ -78,28 +69,34 @@ public class Solver {
 	}
 
 	public void solve() {
-		solve(0);
+		solve(new StepsCounter());
 	}
 
-	public void solve(int solvedLimit) {
+	public void solve(StepsCounter counter) {
 		boolean success;
 		do {
 			success = false;
-			success |= solveNodes(solvedLimit);
-			success |= solveGroups();
+			success |= solveNodes(counter);
+			if (counter.isLimitReached()) {
+				break;
+			}
+
+			success |= solveGroups(counter);
+			if (counter.isLimitReached()) {
+				break;
+			}
 		} while (success);
 	}
 
-	private boolean solveNodes(int stepsLimit) {
+	private boolean solveNodes(StepsCounter counter) {
 
 		boolean success = false;
-		int stepsCount = 0;
 
-		while (scheduler.hasNext() && (stepsLimit == 0 || stepsLimit > stepsCount)) {
+		while (scheduler.hasNext() && !counter.isLimitReached()) {
 			Node node = scheduler.next();
 			if (solveNode(node)) {
 				success = true;
-				stepsCount++;
+				counter.increase();
 				state.setLastSolvedNode(node);
 			}
 		}
@@ -107,13 +104,13 @@ public class Solver {
 		return success;
 	}
 
-	private boolean solveGroups() {
-		if (!scheduler.hasNext() && usePreventDeadGroups11) {
-			preventDeadGroups11();
-		}
-		if (!scheduler.hasNext()) {
-			preventDeadGroupsDegree2();
-		}
+	private boolean solveGroups(StepsCounter counter) {
+		// if (!scheduler.hasNext() && usePreventDeadGroups11) {
+		preventIsolatedGroupsDegree1();
+		// }
+		// if (!scheduler.hasNext()) {
+		preventIsolatedGroupsDegree2();
+		// }
 		// if (!scheduler.hasNext()) {
 		// preventDeadGroupsDegree3();
 		// }
@@ -123,55 +120,8 @@ public class Solver {
 		return false;
 	}
 
-	// public void solve() {
-	// scheduler.reset();
-	// solve(0);
-	// }
-
-	// public void solve(int limit) {
-	//
-	// int successCount = 0;
-	// boolean hadNext = false;
-	//
-	// while (limit == 0 || (limit > 0 && successCount < limit)) {
-	//
-	// if (!scheduler.hasNext() && usePreventDeadGroups11) {
-	// preventDeadGroups11();
-	// }
-	// if (!scheduler.hasNext()) {
-	// preventDeadGroupsDegree2();
-	// }
-	// if (!scheduler.hasNext()) {
-	// preventDeadGroupsDegree3();
-	// }
-	// if (!scheduler.hasNext() && usePreventDeadGroups121) {
-	// preventDeadGroups121();
-	// }
-	//
-	// if (scheduler.hasNext()) {
-	// Node node = scheduler.next();
-	// if (solveNode(node)) {
-	// successCount++;
-	// state.setLastSolvedNode(node);
-	// }
-	//
-	// hadNext = true;
-	// } else {
-	// if (!hadNext) {
-	// break;
-	// }
-	//
-	// hadNext = false;
-	// }
-	// }
-	// }
-
 	private boolean solveNode(Node node) {
 		boolean success = false;
-
-		// if (node.isNotComplete()) {
-		// success |= matchRemaining(node);
-		// }
 
 		if (node.isNotComplete()) {
 			success |= matchCompletely(node);
@@ -179,46 +129,6 @@ public class Solver {
 
 		if (node.isNotComplete() && usePartialMatch) {
 			success |= matchPartially(node);
-		}
-
-		return success;
-	}
-
-	private boolean matchRemaining(Node node) {
-		assert node.isNotComplete();
-
-		boolean success = false;
-		Node remaining = null;
-		Side side = null;
-
-		for (Side s : Side.values()) {
-			Node neighbour = node.neighbour(s);
-			if (neighbour != null) {
-				if (remaining == null) {
-					remaining = neighbour;
-					side = s;
-				} else {
-					remaining = null;
-					side = null;
-					break;
-				}
-			}
-		}
-
-		if (remaining != null) {
-			int edgeDegree = Math.min(remaining.degree(), 2);
-			// int edgeDegree = node.availableDegree(side);
-
-			assert remaining.isNotComplete();
-			assert node.degree() <= edgeDegree;
-
-			log.info("[REMAINING MATCH] -> node=({})", node);
-			scheduler.schedule(remaining, node);
-			state.connectFully(node, side, scheduler);
-			node.update();
-			remaining.update();
-
-			success = true;
 		}
 
 		return success;
@@ -275,7 +185,7 @@ public class Solver {
 		return success;
 	}
 
-	private void preventDeadGroups11() {
+	private void preventIsolatedGroupsDegree1() {
 		if (state.getGroups().size() == 2) {
 			return;
 		}
@@ -297,7 +207,7 @@ public class Solver {
 						assert !group.equals(neighbourGroup) : group;
 
 						if (neighbourGroup.degree() == 1) {
-							log.info("[PREVENT DEAD GROUPS 1-1] -> node=({})", gateway);
+							log.info("[PREVENT ISOLATED GROUPS D1] -> node=({})", gateway);
 
 							state.clearNeighbours(gateway, side);
 							scheduler.schedule(gateway, null);
@@ -348,19 +258,7 @@ public class Solver {
 		}
 	}
 
-	//
-	// private Group findGroup(int degree, int gatewayCount, Set<Group>
-	// excludes) {
-	// for (Group group : state.getGroups()) {
-	// if (!excludes.contains(group) && group.degree() == degree
-	// && group.getGatewayNodesCount() == gatewayCount) {
-	// return group;
-	// }
-	// }
-	// return null;
-	// }
-
-	private void preventDeadGroupsDegree2() {
+	private void preventIsolatedGroupsDegree2() {
 		for (Group group : state.getGroups()) {
 			group.update();
 
@@ -373,16 +271,14 @@ public class Solver {
 					Node neighbour = gateway.neighbour(side);
 					if (neighbour != null) {
 						Group neighbourGroup = neighbour.group().update();
-						if (gateway.sideDegree(side) < 2) {
-							return;
-						}
+//						if (gateway.sideDegree(side) < 2) {
+//							return;
+//						}
 
 						assert !group.equals(neighbourGroup) : group;
 
-						if (neighbourGroup.degree() == 2
-								&& neighbourGroup.getGatewaysCount() == 1) {
-							log.info("[PREVENT DEAD GROUPS d2] -> node=({}), neighbour=({})",
-									gateway, neighbour);
+						if (neighbourGroup.degree() == 2 && neighbourGroup.getGatewaysCount() == 1) {
+							log.info("[PREVENT ISOLATED GROUPS D2] -> node=({}), neighbour=({})", gateway, neighbour);
 							// TODO
 							scheduler.schedule(gateway, null);
 							scheduler.schedule(neighbour, null);
@@ -397,37 +293,37 @@ public class Solver {
 		}
 	}
 
-	private void preventDeadGroupsDegree3() {
-		// HashSet<Group> iterGroup = new HashSet<Group>(groups);
-		// for (Group group : iterGroup) {
-		// // if (!group.isActive()) {
-		// // continue;
-		// // }
-		// if (!groups.contains(group)) {
-		// continue;
-		// }
-		// group.update();
-		//
-		// if (group.degree() == 2) {
-		// Node gateway = group.getGatewayNodes().iterator().next();
-		//
-		// assert gateway.degree() == 1 : gateway;
-		//
-		// for (Side side : Side.values()) {
-		// Node neighbour = gateway.neighbour(side);
-		// if (neighbour != null) {
-		//
-		// Group neighbourGroup = neighbour.group();
-		// if (group.equals(neighbourGroup)) {
-		// continue;
-		// }
-		//
-		// connectNodesPartially(gateway, neighbour, side);
-		// neighbour.update();
-		// }
-		// }
-		// gateway.update();
-		// }
-		// }
-	}
+	// private void preventDeadGroupsDegree3() {
+	// HashSet<Group> iterGroup = new HashSet<Group>(groups);
+	// for (Group group : iterGroup) {
+	// // if (!group.isActive()) {
+	// // continue;
+	// // }
+	// if (!groups.contains(group)) {
+	// continue;
+	// }
+	// group.update();
+	//
+	// if (group.degree() == 2) {
+	// Node gateway = group.getGatewayNodes().iterator().next();
+	//
+	// assert gateway.degree() == 1 : gateway;
+	//
+	// for (Side side : Side.values()) {
+	// Node neighbour = gateway.neighbour(side);
+	// if (neighbour != null) {
+	//
+	// Group neighbourGroup = neighbour.group();
+	// if (group.equals(neighbourGroup)) {
+	// continue;
+	// }
+	//
+	// connectNodesPartially(gateway, neighbour, side);
+	// neighbour.update();
+	// }
+	// }
+	// gateway.update();
+	// }
+	// }
+	// }
 }

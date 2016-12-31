@@ -18,14 +18,14 @@ import org.jsoup.select.Elements;
 
 public class MenneskeDownloader {
 
-	private final String URL_TEMPLATE = "http://www.menneske.no/hashi/eng/showpuzzle.html?number=&number;";
+	private final String URL_TEMPLATE = "http://www.menneske.no/hashi/&size;x&size;/eng/showpuzzle.html?number=&number;";
 	private final String URL_TEMPLATE_RANDOM = "http://www.menneske.no/hashi/&size;x&size;/eng/random.html";
 
 	private String homePath;
 
 	public static void main(String[] args) throws MalformedURLException, IOException {
 //		new MenneskeDownloader().downloadRandom(50);
-		new MenneskeDownloader().download(66952);
+		new MenneskeDownloader().download(11, 133471);
 	}
 
 	public MenneskeDownloader() {
@@ -38,10 +38,10 @@ public class MenneskeDownloader {
 			if (StringUtils.isBlank(this.homePath)) {
 				throw new IllegalStateException("hashi.home not set");
 			}
-			this.homePath += "/menneske";
 		} else {
-			this.homePath = homePath;
+			this.homePath = homePath ;
 		}
+		this.homePath += "/menneske";
 	}
 
 	public void downloadRandom(int quantity) throws MalformedURLException, IOException {
@@ -65,8 +65,14 @@ public class MenneskeDownloader {
 		}
 	}
 
-	public void download(int number) throws MalformedURLException, IOException {
+	public void download(int size, int number) throws MalformedURLException, IOException {
 		String url = URL_TEMPLATE.replace("&number;", Integer.toString(number));
+		if (size == 11) {
+			url = url.replace("&size;x&size;/", "");
+		} else {
+			url = url.replace("&size;", Integer.toString(size));
+		}
+		
 		Document document = Jsoup.parse(new URL(url), 3000);
 		parseAndSave(document);
 	}
